@@ -11,23 +11,27 @@ CHUNK_SIZE_BYTES = 5 * 1024 * 1024  # 5MB.
 RETRIES = 3
 
 
-def upload_file(session, metadata, data):
+def upload_file(session, metadata, bytes_buf):
   # 1. Retrieve session for resumable upload.
   sess_resp = session.post(ENDPOINT_URL, json=metadata)
   location = sess_resp.headers['Location']
 
   # 2. Upload the file in chunks.
-  dl = len(data)
-  for start in range(0, dl, CHUNK_SIZE_BYTES):
+  bytes_len = bytes_buf.seek(0, os.SEEK_END)
+  bytes_buf.seek(0)
+  while bytes_buf.tell() != bytes_len:
+    start = bytes_buf.tell()
+    chunk = bytes_buf.read(CHUNK_SIZE_BYTES)
+    end = bytes_buf.tell() - 1
+
     for attempt in range(RETRIES):
-      end = min(start + CHUNK_SIZE_BYTES, dl)
-      content_headers = {'Content-Range': f'bytes {start}-{end-1}/{dl}'}
+      content_headers = {'Content-Range': f'bytes {start}-{end}/{bytes_len}'}
 
       try:
         content_resp = session.put(
             location,
             headers=content_headers,
-            data=data[start:end]
+            data=chunk
         )
 
         if content_resp.status != 200 and content_resp.status != 201 and \
@@ -63,6 +67,6 @@ def create_new_folder(files, name):
   return files.create(body=metadata, fields='id').execute()['id']
 
 
-def share_file_by_id(permissions, id):
+def enable_sharing_for_file(permissions, id):
   permissions.create(
       body={'role': 'reader', 'type': 'anyone'}, fileId=id).execute()
