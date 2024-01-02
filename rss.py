@@ -9,6 +9,12 @@ import mimetypes
 
 MIMETYPE_REGEX = re.compile('(audio/.*)|(image/.*)')
 
+# Returns the hash of the given string.
+def hash_str(s):
+  sha256_hash = hashlib.sha256()
+  sha256_hash.update(s.encode('utf-8'))
+  return sha256_hash.hexdigest()
+
 # Returns the parsed URL if the input is a valid HTTP/S URI.
 def parse_url(url):
   try:
@@ -21,15 +27,6 @@ def parse_url(url):
 def url_ext(url):
   rel_path = url.path.split('/')[-1]
   return rel_path.split('.')[-1] if '.' in rel_path else None
-
-# Downloads the given URL to the given filename.
-def download(url, f):
-  try:
-    response = requests.get(url)
-    with open(f, 'wb') as file:
-      file.write(response.content)
-  except Exception as e:
-    print(f'Error downloading {url}: {e}')
 
 # Returns a (node, attrib, url) reference for each URL that appears
 # in the node or its children. A 'None' attrib is used to signal
@@ -49,27 +46,20 @@ def find_urls(node):
 
   return refs
 
+# Returns a (node, attrib, url, ext, mimetype) tuple for each
+# URL appearing in the tree that is considered a piece of media
+# that should be backed up.
+def find_media_urls(root):
+  refs = find_urls(root)
+  media_refs = []
 
-# TODO: rewrite node tree to reference new files uploaded on
-# Google drive.
-refs = find_urls(et.parse('../mini.rss').getroot())
-file_refs = []
+  for node, attr, url in refs:
+    ext = url_ext(url)
+    mimetype, _ = mimetypes.guess_type(url.path)
 
-for node, attr, url in refs:
-  ext = url_ext(url)
-  mimetype, _ = mimetypes.guess_type(url.path)
+    if not mimetype or not MIMETYPE_REGEX.match(mimetype):
+      continue
 
-  if not mimetype or not MIMETYPE_REGEX.match(mimetype):
-    continue
+    media_refs.append((node, attr, urlunparse(url), ext, mimetype))
 
-  file_refs.append((node, attr, url, f'{hash_str(urlunparse(url))[-10:]}.{ext}', mimetype))
-
-  # Skip already-downloaded files.
-  if os.path.exists(file_refs[-1][-1]):
-    continue
-
-  print(f'Downloading {url} to {file_refs[-1][-1]}')
-  download(urlunparse(url), file_refs[-1][-1])
-  print('Done')
-
-print([(attr, urlunparse(url), fn) for _, attr, url, fn, _ in file_refs])
+  return media_refs
