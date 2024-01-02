@@ -1,9 +1,17 @@
+import hashlib
+import os
 import requests
 from urllib.parse import urlparse, urlunparse
 import uuid
 import xml.etree.ElementTree as et
 
 BACKUP_EXTS = ['mp3']
+
+# Returns the hash of the given string.
+def hash_str(s):
+  sha256_hash = hashlib.sha256()
+  sha256_hash.update(s.encode('utf-8'))
+  return sha256_hash.hexdigest()
 
 # Returns the parsed URL if the input is a valid HTTP/S URI.
 def parse_url(url):
@@ -32,7 +40,7 @@ def download(url, f):
 # that the URL is in the node's text instead of an attribute.
 def find_urls(node):
   refs = []
-  
+
   text_url = parse_url(node.text)
   if text_url:
     refs += [(node, None)]  # None means URL in text.
@@ -44,6 +52,7 @@ def find_urls(node):
     refs += find_urls(child)
 
   return refs
+
 
 # TODO: rewrite node tree to reference new files uploaded on
 # Google drive.
@@ -58,7 +67,12 @@ for node, attr in refs:
     file_refs.append(None)
     continue
 
-  file_refs.append(f'{str(uuid.uuid4().hex)[:10]}.{ext}')
+  file_refs.append(f'{hash_str(url)[-10:]}.{ext}')
+
+  # Skip already-downloaded files.
+  if os.path.exists(file_refs[-1]):
+    continue
+
   print(f'Downloading {url} to {file_refs[-1]}')
   download(url, file_refs[-1])
   print('Done')
