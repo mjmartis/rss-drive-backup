@@ -1,11 +1,11 @@
 import hashlib
+import mimetypes
 import os
 import re
 import requests
 from urllib.parse import urlparse, urlunparse
 import uuid
 import xml.etree.ElementTree as et
-import mimetypes
 
 MIMETYPE_REGEX = re.compile('(audio/.*)|(image/.*)')
 

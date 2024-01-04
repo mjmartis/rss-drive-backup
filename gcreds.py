@@ -15,8 +15,6 @@ TOKEN_JSON = 'token.json'
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
 # Loads credentials from either a cached token file or through a web flow.
-
-
 def get_gcreds():
   creds = None
 
