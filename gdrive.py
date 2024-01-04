@@ -51,7 +51,7 @@ def find_folder_id(files, name):
       .list(
           q=f'mimeType="{FOLDER_MIMETYPE}" and name="{name}" and trashed=false',
           spaces='drive',
-          fields='nextPageToken, files(id, name)',
+          fields='files(id)',
       )
       .execute()
   )

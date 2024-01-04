@@ -9,12 +9,6 @@ import xml.etree.ElementTree as et
 
 MIMETYPE_REGEX = re.compile('(audio/.*)|(image/.*)')
 
-# Returns the hash of the given string.
-def hash_str(s):
-  sha256_hash = hashlib.sha256()
-  sha256_hash.update(s.encode('utf-8'))
-  return sha256_hash.hexdigest()
-
 # Returns the parsed URL if the input is a valid HTTP/S URI.
 def parse_url(url):
   try:
